@@ -51,4 +51,60 @@ describe('Campaigns', () => {
         const isContributor = await campaign.methods.approvers(accounts[1]).call();
         assert(isContributor);
     });
+
+    it ("Campaign Has Minimum Contribution", async () => {
+        try {
+            await campaign.methods.contribute().send({
+                value: '50',
+                from: accounts[2]
+            })
+            assert(false);
+        } catch (e) {
+            assert(e);
+        }
+    });
+
+    it ("Manager Can Make Payment Request", async () => {
+        await campaign.methods
+            .createRequest('Buy Crypto', '100', accounts[5])
+            .send({
+                from: accounts[0],
+                gas: '1000000'
+            });
+        const request = await campaign.methods.requests(0).call();
+        assert.strictEqual('Buy Crypto', request.description);
+    })
+
+    it ("Processes Request", async () => {
+        let initialBalance = await web3.eth.getBalance(accounts[2]);
+        initialBalance = web3.utils.fromWei(initialBalance, 'ether');
+        initialBalance = parseFloat(initialBalance);
+
+        await campaign.methods.contribute().send({
+            from: accounts[0],
+            value: web3.utils.toWei('10', 'ether')
+        })
+
+        await campaign.methods
+            .createRequest('Buy Crypto', web3.utils.toWei('5', 'ether') , accounts[2])
+            .send({
+                from: accounts[0],
+                gas: '1000000'
+            })
+
+        await campaign.methods.approveRequest(0).send({
+            from: accounts[0],
+            gas: '1000000'
+        })
+
+        await campaign.methods.finalizeRequest(0).send({
+            from: accounts[0],
+            gas: '1000000'
+        })
+
+        let finalBalance = await web3.eth.getBalance(accounts[2]);
+        finalBalance = web3.utils.fromWei(finalBalance, 'ether');
+        finalBalance = parseFloat(finalBalance);
+        assert(finalBalance > (initialBalance + 2));
+    })
 })
