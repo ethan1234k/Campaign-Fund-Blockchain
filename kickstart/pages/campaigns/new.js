@@ -14,7 +14,7 @@ const CreateCampaign = () => {
         event.preventDefault();
 
         setIsLoading(true);
-        setErrorMessage("")
+        setErrorMessage("");
         try {
             const accounts = await web3.eth.getAccounts()
             await factory.methods.createCampaign(minContribution).send({
